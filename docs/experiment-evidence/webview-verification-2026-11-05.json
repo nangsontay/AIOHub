@@ -1,0 +1,92 @@
+{
+  "date": "2026-11-05",
+  "unitTests": {
+    "passed": 7,
+    "failed": 0
+  },
+  "typecheck": "passed",
+  "jsBundles": {
+    "ios": "passed: final shared source exported after Android follow-up",
+    "android": "passed: final standalone Release build"
+  },
+  "nativeBuild": {
+    "iosArm64SimulatorRelease": "passed",
+    "android": "passed: ARM64 standalone Release APK"
+  },
+  "simulator": {
+    "model": "iPhone 17 Pro",
+    "os": "iOS 26.5",
+    "appLaunch": "observed",
+    "youtubeHome": "observed",
+    "googleEmailEntryPage": "observed",
+    "completedLogin": "observed: signed-in YouTube account page after user completed Google two-step verification",
+    "authenticatedSessionTransfer": "passed: same account visible on fresh destination without another login"
+  },
+  "dependencyAudit": {
+    "total": 26,
+    "high": 2,
+    "note": "High findings are in Expo development-tool dependency chain; no public-release claim."
+  },
+  "destination": {
+    "name": "AIOHub Destination",
+    "freshSimulator": true,
+    "signedOutAccountScreen": "observed",
+    "sessionImport": "passed: 44 records accepted through document picker",
+    "sameAccount": "visually observed",
+    "videoPlayback": "visually observed at 0:35 / 8:28",
+    "survivesAppRelaunch": "visually observed",
+    "binaryRevision": "iOS simulator binary before Android follow-up changes"
+  },
+  "transfer": {
+    "consent": "explicit user approval",
+    "encryptedFileBytes": 21254,
+    "cookieRecords": 44,
+    "cloudUpload": false,
+    "temporaryEncryptedFilesRemoved": true,
+    "keyWrittenToFilesOrToolText": false
+  },
+  "limits": [
+    "two simulators on same Mac/network/iOS 26.5",
+    "physical phones not tested",
+    "expiry, rotation, device reboot, cross-network use and revocation not tested",
+    "Android ordinary-cookie transfer omitted 25 partitioned records; complete browser profile not demonstrated"
+  ],
+  "android": {
+    "emulator": "Medium Phone API 37.0",
+    "os": "Android 17",
+    "apkInstall": "passed",
+    "appProcess": "stopped after completed test",
+    "youtubeLogin": "visually confirmed signed-in account page after user workaround",
+    "sessionTransfer": "passed: ordinary cookies only; explicit incomplete-transfer mode",
+    "apk": "youtube-session-lab-android.apk",
+    "youtubeHome": "visually observed",
+    "signedOutAccountScreen": "visually observed",
+    "androidStudioSync": "passed after Java 21 / Node PATH setup",
+    "apkSha256": "e8afd0d03d928e2d5b258682bbcdc67f745daaf5b782778836d36062d9d5edd4",
+    "googleEmailEntryPage": "visually observed",
+    "androidStudioVersion": "Rabbit 2 / 2026.2.2",
+    "studioToolchain": "Java 21, Node available on PATH",
+    "knownIssue": "post-login redirect can remain loading; root cause unproven; debugging deferred by user",
+    "destinationProfile": "AIOHub_Android_Destination: fresh configuration using shared system image; no source userdata copied",
+    "destinationBaseline": "visually rechecked signed out after Studio restart and APK reinstall",
+    "acpReview": "partial; native source read; JS reads timed out; no runtime account data provided",
+    "resume": "completed: input recovered after bringing Studio to main display; both existing AVDs used without wiping data",
+    "fullExport": "rejected: partitioned metadata unsupported; no key/file produced by rejecting export",
+    "partialModeConsent": "explicit user choice to test ordinary cookies after disclosure of omitted partitioned state",
+    "cookieRecords": 139,
+    "omittedPartitionedRecords": 25,
+    "encryptedFileBytes": 66286,
+    "fileIntegrity": "SHA-256 matched after local ciphertext copy",
+    "cloudUpload": false,
+    "sessionImport": "all 139 records accepted after preserving Android host-only cookie scope",
+    "sameAccount": "visually confirmed matching account and history without another Google login",
+    "videoPlayback": "main video observed at 1:01 / 8:28 with pause control after advertisements",
+    "survivesAppRelaunch": "visually confirmed same account after force-stop and relaunch",
+    "hostOnlyRestore": "non-dot stored domains are omitted from Set-Cookie only when they exactly match record URL; dot domains preserved; mismatches reject before clearing destination",
+    "keyRoute": "separate UI clipboard; never read into tool text or written to a key file",
+    "temporaryEncryptedFilesRemoved": true,
+    "transferClipboards": "replaced with non-sensitive text on Mac and both emulators; import disabled after replacement",
+    "testProcesses": "both test apps force-stopped and both task-started emulators stopped cleanly; AVD data not wiped",
+    "scope": "two Android 17 / System WebView 145.0.7632.218 emulators on same Mac/network; incomplete browser state"
+  }
+}

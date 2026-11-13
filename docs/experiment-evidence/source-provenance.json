@@ -1,0 +1,43 @@
+{
+  "compiledAt": "2026-11-13",
+  "timezone": "Asia/Bangkok",
+  "purpose": "Historical experiment evidence for AIOHub implementation; no new authentication or session-transfer test performed.",
+  "records": [
+    {
+      "id": "webview-verification-2026-11-05.json",
+      "source": "/Users/nangsontay/Documents/Codex/2026-11-04/make-webview-behavior-like-browser/outputs/verification.json",
+      "copy": "docs/experiment-evidence/webview-verification-2026-11-05.json",
+      "sha256": "829d7463e6897090b1b51b326049c95c0578066be5c9b757c08bc87f57f18380",
+      "bytes": 4744,
+      "copyVerifiedAgainstOriginal": true
+    },
+    {
+      "id": "webview-results-2026-11-05.txt",
+      "source": "/Users/nangsontay/Documents/Codex/2026-11-04/make-webview-behavior-like-browser/outputs/youtube-session-test-results.txt",
+      "copy": "docs/experiment-evidence/webview-results-2026-11-05.txt",
+      "sha256": "547d69760be28d19b86bc5f4c0ea4de078138eb385f4df7aed8fda56c73298d0",
+      "bytes": 3102,
+      "copyVerifiedAgainstOriginal": true
+    },
+    {
+      "id": "original-webview-technical-report",
+      "source": "/Users/nangsontay/Documents/Codex/2026-11-04/make-webview-behavior-like-browser/plans/reports/technical-261105-1951-aiohub-prototype-ios-android.md",
+      "copied": false,
+      "sha256": "611b54cfc08deee991171b812087549eea4bea463cb87ab5cac9f26f51b396f6",
+      "reason": "The new report consolidates lessons; source report remains at its existing local owner."
+    }
+  ],
+  "geckoviewEvidence": {
+    "basis": "Prior turns and recorded outcomes in the same user conversation, 2026-11-07 through 2026-11-08",
+    "originalProject": "/Users/nangsontay/MobileAssignment1",
+    "originalProjectPresentAtCompilation": false,
+    "rawArtifactsReopened": false,
+    "limit": "Historical GeckoView raw logs/screenshots/source archive were not recovered at their old locations during this documentation task. Outcomes are not presented as newly reproduced tests."
+  },
+  "reactNativeEvidence": {
+    "basis": "Observed scaffold initialization/build/test results in the preceding turn on 2026-11-13, plus native configuration read during this task",
+    "runtimeLoginRetested": false,
+    "limit": "Concurrent UI/dependency work may postdate the scaffold checks; this is not a latest-tree regression certificate."
+  },
+  "privacy": "Copies contain metadata/results only. No session cookie values, transfer keys, passwords or account identities are included."
+}

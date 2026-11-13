@@ -1,0 +1,32 @@
+YouTube session-transfer prototype — observed results
+Date: 2026-11-05 (Asia/Bangkok)
+
+PASS: iOS arm64 Release simulator build and app launch.
+PASS: Normal Google/YouTube login on source, including user-completed two-step verification.
+PASS: Fresh destination explicitly showed “You're not signed in.”
+PASS: Encrypted source export contained 44 cookie records and current-origin YouTube storage.
+PASS: Destination imported all 44 records through the app's file picker.
+PASS: Destination showed the same YouTube account and history without another login.
+PASS: Video playback was visibly observed at 0:35 / 8:28.
+PASS: The destination stayed signed in after terminating and relaunching the app.
+PASS: Original five encryption/validation tests and original iOS/Android JS bundles; current Android follow-up has seven tests, TypeScript, and a passing standalone Release build.
+
+The user explicitly approved the local session transfer. The encrypted export and its separate key stayed on this Mac; there was no cloud upload. Temporary transfer files were removed. No account identifiers, keys, or cookie contents are included in these results or source archives.
+
+Limits: two iPhone simulators on the same Mac/network and iOS 26.5. Physical iPhones, different networks, cookie expiry/rotation, device reboot, and provider revocation were not tested. This result does not prove production reliability or free background playback.
+
+Android follow-up — same Mac/network, Android 17 / API 37, System WebView 145.0.7632.218
+PASS: Source kept normal YouTube sign-in after Studio/emulator restart.
+PASS: Destination explicitly showed signed out before import.
+LIMIT: Original export rejects partitioned cookies; the user explicitly selected incomplete ordinary-cookie export.
+PASS: AES-GCM export saved 139 ordinary cookie records and current-origin storage, marking 25 omitted partitioned records inside authenticated ciphertext. Encrypted size: 66,286 bytes.
+PASS: Ciphertext checksum matched after local transfer; key was pasted separately through UI clipboard.
+FIXED: First import rejected three host-prefixed cookies; restoring Chromium host-only domain semantics let all 139 records import while preserving scope.
+PASS: Same account and history were visually confirmed without another login.
+PASS: Main video observed at 1:01 / 8:28 with pause control after advertisements.
+PASS: Same account remained after force-stop and app relaunch.
+PASS: Temporary ciphertext removed; transfer clipboards replaced with non-sensitive text; apps and test emulators stopped without wiping AVD data.
+
+This Android result proves an incomplete ordinary-cookie transfer in this environment. It does not prove complete browser-state sync, physical-device/cross-network reliability, session longevity, free background playback, Spotify, or SoundCloud compatibility. The Google post-login redirect hang remains unresolved and was intentionally not debugged.
+
+PASS: Final shared-source iOS JavaScript bundle export after Android follow-up. The downloadable iOS native simulator binary still predates those source changes.
