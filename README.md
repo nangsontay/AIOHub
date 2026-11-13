@@ -37,6 +37,19 @@ The app supports guest browsing, local account registration and sign-in, and dem
 
 Demo controls also provide offline mode, screen-state previews, Device 2, sample Device 1 sessions, and demo reset. Signed-in users on Device 2 can simulate restoring provider sessions from Home or the account sheet. Sessions are stored per service, and the default service retains its existing session key. Gecko's default persistent profile retains website data; there is no per-platform profile isolation yet. The Android app ID is `dev.aiohub.app`, separate from the earlier `dev.aiohub.geckolab` prototype.
 
+## Build a release APK
+
+```sh
+cd android
+./gradlew --no-daemon :app:assembleRelease -PreactNativeArchitectures=arm64-v8a
+```
+
+The ARM64 APK is written to `android/app/build/outputs/apk/release/app-release.apk`. The architecture override keeps this APK to one ABI; omitting it uses the architectures in `android/gradle.properties` and can produce a much larger APK.
+
+Release builds enable R8 code optimization and resource shrinking. Native libraries are compressed to reduce direct APK download size; Android extracts them at installation, which increases installed storage compared with loading uncompressed libraries directly from the APK. GeckoView remains bundled. Release builds still use the template development signing key; configure private signing before public distribution.
+
+Measured on 2026-11-13: the optimized ARM64 release APK is **100.2 MB**, down from **218.4 MB** (54.1% smaller). See the [APK size investigation and verification](plans/reports/investigation-261113-1455-apk-size.md) for the exact artifact sizes and validation limits.
+
 ## Structure
 
 - `App.tsx`: router and shell — brand header (account, demo controls, offline banner) over the current screen.
