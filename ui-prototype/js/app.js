@@ -9,78 +9,129 @@ const icon = (name,cls='') => '<svg class="ico '+cls+'" viewBox="0 0 24 24" aria
 const esc = v => String(v ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const btn = (action,label,style='second',symbol='') => '<button type="button" data-do="'+action+'" class="btn '+style+'">'+(symbol?icon(symbol):'')+label+'</button>';
 const cats = {Video:'YouTube', Music:'Spotify', News:'VnExpress', Game:'2048'};
+const videoServices = [
+ {name:'YouTube',detail:'Everyday videos'},
+ {name:'Vimeo',detail:'Creative films'},
+ {name:'Twitch',detail:'Live stream replays'},
+ {name:'Dailymotion',detail:'Videos and stories'}
+];
+const musicServices = [{name:'Spotify',detail:'Playlists and tracks'},{name:'SoundCloud',detail:'New artists and mixes'},{name:'Bandcamp',detail:'Independent music'}];
+const newsServices = [{name:'VnExpress',detail:'News and features'},{name:'Tuổi Trẻ',detail:'Stories from Vietnam'},{name:'Thanh Niên',detail:'News and culture'}];
+const gameServices = [{name:'2048',detail:'Merge number tiles'},{name:'Tic Tac Toe',detail:'Play together on one device'},{name:'Memory Match',detail:'Find matching pairs'}];
+const servicesByCategory = {Video:videoServices,Music:musicServices,News:newsServices,Game:gameServices};
 const demos = {a:{name:'Avery',email:'avery@example.test'},b:{name:'Blair',email:'blair@example.test'}};
 const videos = [{name:'Saigon after the rain',by:'City Frames',time:164,color:'#6d598f'},{name:'Inside a cassette deck',by:'Tape Notes',time:208,color:'#967142'},{name:'A walk along the river',by:'Field Journal',time:112,color:'#497969'}];
+const videoCollections = {
+ YouTube:videos,
+ Vimeo:[{name:'Paper Skies',by:'Studio Lumen',time:176,color:'#526d84'},{name:'The Maker’s Table',by:'Craft Stories',time:202,color:'#77628a'},{name:'After the Light',by:'Small Frame Films',time:155,color:'#a27164'}],
+ Twitch:[{name:'Cozy game night replay',by:'Pixel Corner',time:198,color:'#7653a1'},{name:'Art stream highlights',by:'Draw Along',time:184,color:'#9a647e'},{name:'Indie game session',by:'The Game Room',time:213,color:'#5b7392'}],
+ Dailymotion:[{name:'Morning city guide',by:'Everyday Places',time:170,color:'#557c80'},{name:'Weekend cooking ideas',by:'Home Table',time:189,color:'#a27255'},{name:'A walk through old streets',by:'City Notes',time:161,color:'#69768e'}]
+};
 const tracks = [{name:'Violet Hours',by:'Mira Vale',time:189,color:'#62528d'},{name:'Side B',by:'The Quiet Room',time:212,color:'#546e60'},{name:'Night Bus Home',by:'June Signal',time:173,color:'#995d51'}];
+const musicCollections = {
+ Spotify:tracks,
+ SoundCloud:[{name:'Cloudline',by:'Nova Lane',time:178,color:'#a86d52'},{name:'Late Train Mix',by:'Low Tide',time:205,color:'#695f9b'},{name:'Open Window',by:'Rue Field',time:166,color:'#4e807e'}],
+ Bandcamp:[{name:'First Light',by:'Fern Studio',time:191,color:'#5d7869'},{name:'Small Hours',by:'The Evening Club',time:201,color:'#8a6383'},{name:'Slow River',by:'Moss & Moon',time:174,color:'#9a755c'}]
+};
 const articles=[
  {title:'A weekend on the banks of the Saigon River',section:'City life',paras:['Early on Saturday, the riverfront is already awake. Walkers share the promenade with cyclists while the first small coffee stands open beside the path.','From the footbridge, the river curves past new apartment towers and older ferry piers. At the water’s edge, visitors can hear the ferries long before they come into view.','A group of students has brought sketchbooks. They stop at the same bend every weekend to draw what changes with the tide, the light and the passing boats.','By late morning, families settle on the steps for a break. There is room to watch the river from the shade, and the breeze makes this stretch of the city feel unhurried.']},
  {title:'The student record club bringing cassettes back',section:'Culture',paras:['Once a month, a listening club meets to share recordings collected from friends and neighborhood shops.','Each member picks a track, introduces the artist, and lets the group hear a complete side together.','The handmade labels are part of the appeal. Members exchange cover sketches and notes alongside the recordings.']},
  {title:'A new reading corner for the neighborhood',section:'Community',paras:['Volunteers have turned an unused room into a small weekend reading space.','Readers can borrow a book or settle into a chair by the window. The shelves already hold poetry, science guides and illustrated stories.','The next meeting will bring families together to choose the books they would like to see next.']}
 ];
+const newsCollections = {
+ VnExpress:articles,
+ 'Tuổi Trẻ':[
+  {title:'Students build a weekend book exchange',section:'Community',paras:['A student group has set up a small book exchange for neighbors to share stories and recommendations.','Visitors bring books they have finished and choose something new to take home.','The group hopes to add reading sessions for younger children next month.']},
+  {title:'A greener route to school',section:'City life',paras:['Families and volunteers are testing a walking route that links several quiet streets near local schools.','The route includes shaded rest points and signs reminding drivers to slow down.','Organizers will gather feedback before planning the next section.']}
+ ],
+ 'Thanh Niên':[
+  {title:'Young artists open a shared studio',section:'Culture',paras:['A group of young artists has opened a shared studio for weekend workshops.','The space offers room for drawing, photography and small exhibitions.','Visitors can meet the artists and try a short introductory session.']},
+  {title:'Neighborhood teams meet for a friendly tournament',section:'Sports',paras:['Community teams gathered for a friendly weekend tournament at the local court.','Players of different ages took part while neighbors watched from the sidelines.','The organizers hope the event becomes a regular fixture.']}
+ ]
+};
 const KEY='aiohub-pocket-v1';
-function fresh(){return {accounts:{},sessions:{},games:{},device:'D1',user:null};}
+function fresh(){return {accounts:{},sessions:{},games:{},device:'D1',user:null,guest:false};}
 let data;try{data=JSON.parse(localStorage.getItem(KEY))||fresh();}catch{data=fresh();}
-let route={page:data.user?'home':'welcome'}, stack=[], held='', offline=false, chosenDemo='a', notice='', prefill='', outcome='success', restoreState='', timer, playTimer, playing=false, picked=0, elapsed=0, search='', currentPanel='', dialogFocusEl, loadTicket=0, restoreTicket=0;
+let route={page:data.user||data.guest?'home':'welcome'}, stack=[], held='', offline=false, chosenDemo='a', notice='', prefill='', outcome='success', restoreState='', timer, playTimer, playing=false, picked=0, elapsed=0, search='', currentPanel='', dialogFocusEl, loadTicket=0, restoreTicket=0;
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data));}catch{/* Storage may be unavailable in private previews. */}};
 const announce=text=>document.getElementById('announce').textContent=text;
 const who=()=>Object.values(demos).find(d=>d.email===data.user)?.name || (data.user||'Guest').split('@')[0];
 const sessionKey=(cat,device=data.device)=>JSON.stringify([device,data.user,cat]);
 const session=(cat,device)=>data.sessions[sessionKey(cat,device)];
+const serviceName=()=>route.service||cats[route.cat];
+const serviceKey=()=>serviceName()===cats[route.cat]?route.cat:route.cat+':'+serviceName();
+const restorableKeys=()=>Object.entries(servicesByCategory).filter(([cat])=>cat!=='Game').flatMap(([cat,services])=>services.map(v=>v.name===cats[cat]?cat:cat+':'+v.name));
+const routeForServiceKey=k=>{const at=k.indexOf(':');return at<0?{cat:k,service:cats[k]}:{cat:k.slice(0,at),service:k.slice(at+1)};};
+const mediaItems=()=>route.cat==='Video'?(videoCollections[serviceName()]||videos):(musicCollections[serviceName()]||tracks);
 const statusText=()=>data.device==='D2'?'Device 2':'Device 1';
 function stop(){clearInterval(playTimer);playing=false;}
 function resetPlayer(){stop();picked=0;elapsed=0;search='';}
 function navigate(next,replace=false){
-  if (next.page!=='provider'||route.cat!==next.cat) resetPlayer();
+  if (next.page!=='provider'||route.cat!==next.cat||route.service!==next.service) resetPlayer();
   clearTimeout(timer); loadTicket++; restoreTicket++;
   if (!replace) stack.push(route);
   route=next;render(true);window.scrollTo(0,0);
 }
 function back(){
-  resetPlayer();clearTimeout(timer);loadTicket++;restoreTicket++;route=stack.pop()||{page:data.user?'home':'welcome'};if(route.page==='provider' && route.phase==='loading' && held!=='loading')route.phase=offline?'error':'ready';render(true);window.scrollTo(0,0);
+  resetPlayer();clearTimeout(timer);loadTicket++;restoreTicket++;route=stack.pop()||{page:data.user||data.guest?'home':'welcome'};if(route.page==='provider' && route.phase==='loading' && held!=='loading')route.phase=offline?'error':'ready';render(true);window.scrollTo(0,0);
+}
+function startGuest(){
+  data.user=null;data.guest=true;save();stack=[];notice='';navigate({page:'home'},true);
 }
 function startUser(email){
   prefill='';
-  data.user=email; save();stack=[];notice='';navigate({page:'home'},true);
+  data.user=email;data.guest=false;save();stack=[];notice='';navigate({page:'home'},true);
 }
 function logout(){
-  data.user=null;prefill='';save();stack=[];held='';notice='';restoreState='';navigate({page:'signin'},true);
+  data.user=null;data.guest=false;prefill='';save();stack=[];held='';notice='';restoreState='';navigate({page:'signin'},true);
 }
-function startD2(){data.device='D2';data.user=null;prefill='';Object.keys(data.sessions).filter(k=>JSON.parse(k)[0]==='D2').forEach(k=>delete data.sessions[k]);save();stack=[];held='';offline=false;restoreState='';notice='Device 2 is ready. Sign in with the same AIOHub account.';navigate({page:'signin'},true);}
-function brandHeader(){return '<header class="top"><span class="brand"><img src="./assets/mark.svg" alt="">AIOHub</span><div class="top-actions">'+(data.user?'<button class="icon-btn person" data-do="account" aria-label="Account menu">'+esc(who()[0].toUpperCase())+'</button>':'')+'<button class="icon-btn dot-menu" data-do="demo" aria-label="Demo controls" title="Demo controls">'+icon('more')+'</button></div></header>'+(offline?'<div class="offline" role="status">Offline · Service pages are unavailable</div>':'');}
+function startD2(){data.device='D2';data.user=null;data.guest=false;prefill='';Object.keys(data.sessions).filter(k=>JSON.parse(k)[0]==='D2').forEach(k=>delete data.sessions[k]);save();stack=[];held='';offline=false;restoreState='';notice='Device 2 is ready. Sign in with the same AIOHub account.';navigate({page:'signin'},true);}
+function brandHeader(){return '<header class="top"><span class="brand"><img src="./assets/mark.svg" alt="">AIOHub</span><div class="top-actions">'+(data.user||data.guest?'<button class="icon-btn person" data-do="account" aria-label="'+(data.guest?'Guest':'Account')+' menu">'+esc(who()[0].toUpperCase())+'</button>':'')+'<button class="icon-btn dot-menu" data-do="demo" aria-label="Demo controls" title="Demo controls">'+icon('more')+'</button></div></header>'+(offline?'<div class="offline" role="status">Offline · Service pages are unavailable</div>':'');}
 const backLink=(act,label)=>'<button class="action-link back" data-do="'+act+'">'+icon('left')+label+'</button>';
-function welcome(){return '<main class="stage welcome"><div class="sleeve"><img src="./assets/pocket-mixtape.webp" alt="A translucent indigo cassette with a vinyl record on a lilac background"></div><div class="welcome-copy"><h1>Your media,<br><em>in one place.</em></h1><p>Video, music, news, and games. Choose what to open from your own media hub.</p></div><div class="welcome-actions"><button class="btn primary" data-do="signin">Sign in '+icon('forward')+'</button>'+btn('register','Create account')+btn('demo-login','Use demo account','quiet','user')+'</div></main>';}
+function welcome(){return '<main class="stage welcome"><div class="sleeve"><img src="./assets/pocket-mixtape.webp" alt="A translucent indigo cassette with a vinyl record on a lilac background"></div><div class="welcome-copy"><h1>Your media,<br><em>in one place.</em></h1><p>Video, music, news, and games. Choose what to open from your own media hub.</p></div><div class="welcome-actions"><button class="btn primary" data-do="get-started">Get started '+icon('forward')+'</button>'+btn('signin','Sign in')+btn('register','Create account')+'</div></main>';}
 function inputField(id,label,type,autocomplete,value=''){return '<label class="field" for="'+id+'">'+label+'<input id="'+id+'" name="'+id+'" type="'+type+'" autocomplete="'+autocomplete+'" value="'+esc(value)+'" required aria-describedby="err-'+id+'"><span class="error" id="err-'+id+'" aria-live="polite"></span></label>';}
-function auth(){const reg=route.page==='register';return '<main class="stage flow"><div class="backbar">'+backLink('welcome','Welcome')+'</div><h1>'+(reg?'Create account':'Sign in')+'</h1><p class="sub">'+(reg?'Create a local AIOHub demo account. Use fictional details.':'Sign in to your AIOHub account on '+statusText()+'.')+'</p>'+(notice?'<p class="notice" role="status">'+esc(notice)+'</p>':'')+'<form class="form" id="auth-form" novalidate>'+inputField('email','Email','email','username',prefill)+inputField('password','Password','password',reg?'new-password':'current-password')+(reg?inputField('confirm','Confirm password','password','new-password'):'')+'<p class="error" id="auth-error" role="alert"></p><button class="btn primary" type="submit">'+(reg?'Create account':'Sign in')+'</button></form><div class="compact">'+btn(reg?'signin':'register',reg?'Already have an account? Sign in':'Create account','quiet')+(!reg?btn('demo-login','Use demo account','tonal','user'):'')+'</div></main>';}
-function home(){return '<main class="stage flow"><div class="home-art"><img src="./assets/pocket-mixtape.webp" alt=""><h1>Your hub</h1></div><div><h2>Categories</h2><p class="sub">Choose a service to open.</p></div><div class="grid">'+Object.entries(cats).map(([cat,s])=>'<button class="tile '+cat.toLowerCase()+'" data-do="cat:'+cat+'"><span class="token">'+icon(cat.toLowerCase())+'</span>'+icon('right','arrow')+'<span><strong>'+cat+'</strong><small>'+s+'</small></span></button>').join('')+'</div>'+(data.device==='D2'?btn('restore','Simulated restoration','tonal','device'):'')+'</main>';}
+function auth(){const reg=route.page==='register';return '<main class="stage flow"><div class="backbar">'+backLink('welcome','Welcome')+'</div><h1>'+(reg?'Create account':'Sign in')+'</h1><p class="sub">'+(reg?'Create a local AIOHub demo account. Use fictional details.':'Sign in to your AIOHub account on '+statusText()+'.')+'</p>'+(notice?'<p class="notice" role="status">'+esc(notice)+'</p>':'')+'<form class="form" id="auth-form" novalidate>'+inputField('email','Email','email','username',prefill)+inputField('password','Password','password',reg?'new-password':'current-password')+(reg?inputField('confirm','Confirm password','password','new-password'):'')+'<p class="error" id="auth-error" role="alert"></p><button class="btn primary" type="submit">'+(reg?'Create account':'Sign in')+'</button></form><div class="compact">'+btn(reg?'signin':'register',reg?'Already have an account? Sign in':'Create account','quiet')+'</div></main>';}
+function home(){const descriptions={Video:'Explore videos',Music:'Listen to music',News:'Read the news',Game:'Play games'};return '<main class="stage flow"><div class="home-art"><img src="./assets/pocket-mixtape.webp" alt=""><h1>Your hub</h1></div><div><h2>Categories</h2><p class="sub">'+(data.guest?'Browsing as a guest. Choose a service to open.':'Choose a service to open.')+'</p></div><div class="grid">'+Object.keys(cats).map(cat=>'<button class="tile '+cat.toLowerCase()+'" data-do="cat:'+cat+'"><span class="token">'+icon(cat.toLowerCase())+'</span>'+icon('right','arrow')+'<span><strong>'+cat+'</strong><small>'+descriptions[cat]+'</small></span></button>').join('')+'</div>'+(data.device==='D2'&&data.user?btn('restore','Simulated restoration','tonal','device'):'')+'</main>';}
 function stateCard(symbol,title,txt,actions=''){return '<section class="state"><span class="token">'+(symbol==='loading'?'<span class="spinner"></span>':icon(symbol))+'</span><h2>'+title+'</h2><p class="sub">'+txt+'</p><div class="rowline">'+actions+'</div></section>';}
-function category(){const c=route.cat,s=cats[c];return '<main class="stage flow"><div>'+backLink('home','Home')+'</div><h1>'+c+'</h1><p class="sub">Services</p>'+(held==='empty'?stateCard('empty','No services in this category','Choose another category from Home.',''):'<button class="service-row '+c.toLowerCase()+'" data-do="open:'+c+'"><span class="token">'+icon(c.toLowerCase())+'</span><strong>'+s+'</strong>'+icon('right','end')+'</button>')+'</main>';}
-function openService(cat,sticky=''){
-  held=sticky;resetPlayer();navigate({page:'provider',cat,phase:'loading'});
+function category(){const c=route.cat,rows=servicesByCategory[c].map(v=>'<button class="service-row '+c.toLowerCase()+'" data-do="open:'+c+':'+v.name+'"><span class="token">'+icon(c.toLowerCase())+'</span><span class="service-copy"><strong>'+v.name+'</strong><small>'+v.detail+'</small></span>'+icon('right','end')+'</button>').join('');return '<main class="stage flow"><div>'+backLink('home','Home')+'</div><h1>'+c+'</h1><p class="sub">'+(c==='Game'?'Games':'Services')+'</p>'+(held==='empty'?stateCard('empty','No services in this category','Choose another category from Home.',''):rows)+'</main>';}
+function openService(cat,sticky='',service=cats[cat]){
+  held=sticky;resetPlayer();navigate({page:'provider',cat,service,phase:'loading'});
   if(sticky==='loading') return;
   const ticket=loadTicket;
   timer=setTimeout(()=>{if(ticket!==loadTicket)return;route.phase=offline||sticky==='error'?'error':'ready';render(true);},450);
 }
-function serviceStatus(){const c=route.cat,id=session(c);return '<div class="session"><span class="muted break">'+(id?'Provider account<br><strong>'+esc(id)+'</strong>':'Provider account · Guest')+'</span>'+btn(id?'provider-out':'provider-in',id?'Sign out':'Provider sign-in','quiet small')+'</div>';}
-function provider(){const c=route.cat,s=cats[c];let content='';
+function serviceStatus(){const id=session(serviceKey());return '<div class="session"><span class="muted break">'+(id?'Provider account<br><strong>'+esc(id)+'</strong>':'Provider account · Guest')+'</span>'+btn(id?'provider-out':'provider-in',id?'Sign out':'Provider sign-in','quiet small')+'</div>';}
+function provider(){const c=route.cat,s=serviceName();let content='';
   if(route.phase==='loading') content=stateCard('loading','Opening '+s+'…','Loading the service page.',held==='loading'?btn('finish-load','Finish loading','tonal'):'');
   else if(route.phase==='error'||offline)content=stateCard(offline?'offline':'warn','Couldn’t load '+s,offline?'You are offline. Return to the service list or reconnect in Demo controls.':'The service page could not be opened.',btn('retry','Retry','primary')+btn('services','Back'));
-  else if(c==='News')content=newsPage();else if(c==='Game')content=gamePage();else content=mediaPage(c);
-  return '<div class="servicebar">'+backLink('services','Services')+'<strong>'+s+'</strong></div><main class="stage provider">'+content+(route.phase==='ready'&&!offline?serviceStatus():'')+'</main>';
+  else if(c==='News')content=newsPage();else if(c==='Game')content=gameForService();else content=mediaPage(c);
+  return '<div class="servicebar">'+backLink('services','Services')+'<strong>'+s+'</strong></div><main class="stage provider">'+content+(route.phase==='ready'&&!offline&&c!=='Game'?serviceStatus():'')+'</main>';
 }
 function newsPage(){
-  if(Number.isInteger(route.article)){const art=articles[route.article];return '<article class="article"><div>'+backLink('web-back','Web Back')+'</div><span class="meta">'+art.section+' · Sample article</span><h1>'+art.title+'</h1>'+'<div class="article-body" tabindex="0" role="region" aria-label="Article text">'+art.paras.map(p=>'<p>'+p+'</p>').join('')+'</div></article>';}
-  return '<div class="masthead">VnExpress</div><h1>Headlines</h1><div>'+articles.map((a,i)=>'<button class="story" data-do="article:'+i+'"><small>'+a.section+'</small><strong>'+a.title+'</strong></button>').join('')+'</div>';
+  const items=newsCollections[serviceName()]||articles;
+  if(Number.isInteger(route.article)){const art=items[route.article];return '<article class="article"><div>'+backLink('web-back','Web Back')+'</div><span class="meta">'+art.section+' · Sample article</span><h1>'+art.title+'</h1>'+'<div class="article-body" tabindex="0" role="region" aria-label="Article text">'+art.paras.map(p=>'<p>'+p+'</p>').join('')+'</div></article>';}
+  return '<div class="masthead">'+serviceName()+'</div><h1>Sample headlines</h1><div>'+items.map((a,i)=>'<button class="story" data-do="article:'+i+'"><small>'+a.section+'</small><strong>'+a.title+'</strong></button>').join('')+'</div>';
 }
 const formatTime=t=>Math.floor(t/60)+':'+String(t%60).padStart(2,'0');
 function mediaPage(c){
- const isVideo=c==='Video', items=isVideo?videos:tracks,item=items[picked],matches=items.map((v,i)=>({...v,i})).filter(v=>(v.name+' '+v.by).toLowerCase().includes(search.toLowerCase()));
- return '<h1>'+cats[c]+'</h1>'+(isVideo?'<form id="search-form" class="search"><input type="search" aria-label="Search sample videos" name="q" placeholder="Search sample videos" value="'+esc(search)+'"><button class="btn tonal">Search</button></form>':'')+'<div class="player"><div class="cover" style="--cover:'+item.color+'">'+icon(isVideo?'video':'music')+'</div><div class="player-details"><small class="meta">Simulated playback</small><h2>'+item.name+'</h2><p class="muted">'+item.by+'</p><div class="progress"><i id="fill" style="width:'+elapsed/item.time*100+'%"></i></div><div class="title-row"><small id="time">'+formatTime(elapsed)+' / '+formatTime(item.time)+'</small>'+btn('toggle',playing?'Pause':'Play','primary',playing?'pause':'play')+'</div></div></div><h2>'+(isVideo?'Videos':'Tracks')+'</h2><div class="provider-list">'+(matches.length?matches.map(v=>'<button data-do="pick:'+v.i+'" class="item '+(v.i===picked?'active':'')+'">'+icon(isVideo?'video':'music')+'<span><strong>'+v.name+'</strong><small class="meta">'+v.by+'</small></span>'+icon('play','end')+'</button>').join(''):'<p class="notice">No videos match this search.</p>')+'</div>';
+ const isVideo=c==='Video', items=mediaItems(),item=items[picked],matches=items.map((v,i)=>({...v,i})).filter(v=>(v.name+' '+v.by).toLowerCase().includes(search.toLowerCase()));
+ return '<h1>'+serviceName()+'</h1>'+(isVideo?'<form id="search-form" class="search"><input type="search" aria-label="Search sample videos" name="q" placeholder="Search sample videos" value="'+esc(search)+'"><button class="btn tonal">Search</button></form>':'')+'<div class="player"><div class="cover" style="--cover:'+item.color+'">'+icon(isVideo?'video':'music')+'</div><div class="player-details"><small class="meta">Simulated playback</small><h2>'+item.name+'</h2><p class="muted">'+item.by+'</p><div class="progress"><i id="fill" style="width:'+elapsed/item.time*100+'%"></i></div><div class="title-row"><small id="time">'+formatTime(elapsed)+' / '+formatTime(item.time)+'</small>'+btn('toggle',playing?'Pause':'Play','primary',playing?'pause':'play')+'</div></div></div><h2>'+(isVideo?'Videos':'Tracks')+'</h2><div class="provider-list">'+(matches.length?matches.map(v=>'<button data-do="pick:'+v.i+'" class="item '+(v.i===picked?'active':'')+'">'+icon(isVideo?'video':'music')+'<span><strong>'+v.name+'</strong><small class="meta">'+v.by+'</small></span>'+icon('play','end')+'</button>').join(''):'<p class="notice">No videos match this search.</p>')+'</div>';
 }
-function togglePlayback(){if(playing){stop();render();return;}playing=true;render();playTimer=setInterval(()=>{const item=(route.cat==='Video'?videos:tracks)[picked];elapsed++;if(elapsed>=item.time){elapsed=0;stop();render();return;}document.getElementById('time').textContent=formatTime(elapsed)+' / '+formatTime(item.time);document.getElementById('fill').style.width=100*elapsed/item.time+'%';},1000);}
+function togglePlayback(){if(playing){stop();render();return;}playing=true;render();playTimer=setInterval(()=>{const item=mediaItems()[picked];elapsed++;if(elapsed>=item.time){elapsed=0;stop();render();return;}document.getElementById('time').textContent=formatTime(elapsed)+' / '+formatTime(item.time);document.getElementById('fill').style.width=100*elapsed/item.time+'%';},1000);}
 function getBoard(){const k=sessionKey('board');if(!data.games[k]){data.games[k]=newBoard();save();}return data.games[k];}
 const tileColors={2:'#fff6e8',4:'#ffe2bb',8:'#fbc69a',16:'#f4b485',32:'#ef9d97',64:'#dcadf0',128:'#d8c6ff',256:'#abd9ef',512:'#a2ddcf',1024:'#e9db92',2048:'#ffcc60'};
 function gamePage(){const g=getBoard(),over=['up','down','left','right'].every(d=>!moveBoard(g.board,d).changed);return '<div class="title-row"><h1>2048</h1><strong>Score '+g.score+'</strong></div><p class="sub">Swipe, press an arrow key, or use the arrows below to merge matching tiles.</p><div id="board" class="board" tabindex="0" aria-label="2048 board">'+g.board.map(v=>'<div class="cell"'+(v?' style="background:'+(tileColors[v]||'#dcc8fb')+'"':'')+'>'+ (v||'')+'</div>').join('')+'</div><div class="directions">'+['left','up','down','right'].map((d,i)=>'<button class="btn tonal" aria-label="Move '+d+'" data-do="move:'+d+'">'+['←','↑','↓','→'][i]+'</button>').join('')+'</div>'+(over?'<p class="notice">No moves left. Start a new game to play again.</p>':'')+btn('new-game','New Game','second','reset');}
 function playMove(d){const g=getBoard(),m=moveBoard(g.board,d);if(!m.changed)return;g.board=m.board;spawnTile(g.board);g.score+=m.gained;save();render();announce('Moved '+d+'. Score '+g.score+'.');}
+function gameForService(){return serviceName()==='Tic Tac Toe'?ticTacToePage():serviceName()==='Memory Match'?memoryPage():gamePage();}
+const tttLines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+function tttGame(){const k=sessionKey('ttt');if(!data.games[k]){data.games[k]={cells:Array(9).fill(''),turn:'X'};save();}return data.games[k];}
+function tttResult(cells){for(const [a,b,c] of tttLines)if(cells[a]&&cells[a]===cells[b]&&cells[a]===cells[c])return cells[a];return cells.every(Boolean)?'Draw':'';}
+function ticTacToePage(){const g=tttGame(),result=tttResult(g.cells);return '<h1>Tic Tac Toe</h1><p class="sub">Two players take turns on this device. Place three marks in a row to win.</p><p class="notice" role="status">'+(result==='Draw'?'It’s a draw.':result?result+' wins!':'Turn: '+g.turn)+'</p><div class="mini-board" role="group" aria-label="Tic Tac Toe board">'+g.cells.map((mark,i)=>'<button class="mini-cell" data-do="ttt:'+i+'" aria-label="Square '+(i+1)+(mark?', '+mark:', empty')+'" '+(mark||result?'disabled':'')+'>'+mark+'</button>').join('')+'</div>'+btn('new-ttt','New game','second','reset');}
+function playTtt(i){const g=tttGame();if(i<0||i>8||g.cells[i]||tttResult(g.cells))return;g.cells[i]=g.turn;g.turn=g.turn==='X'?'O':'X';save();render();announce(tttResult(g.cells)||'Turn '+g.turn);}
+function newMemory(){const cards=['🎧','🎮','🎬','📰','🎧','🎮','🎬','📰'];for(let i=cards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cards[i],cards[j]]=[cards[j],cards[i]];}return {cards,revealed:[],matched:[],moves:0};}
+function memoryGame(){const k=sessionKey('memory');if(!data.games[k]){data.games[k]=newMemory();save();}return data.games[k];}
+function memoryPage(){const g=memoryGame(),done=g.matched.length===g.cards.length;return '<h1>Memory Match</h1><p class="sub">Turn over two cards at a time and find all four pairs.</p><p class="notice" role="status">'+(done?'All pairs found in '+g.moves+' tries!':'Pairs: '+g.matched.length/2+' / 4 · Tries: '+g.moves)+'</p><div class="memory-board" role="group" aria-label="Memory Match cards">'+g.cards.map((card,i)=>{const visible=g.revealed.includes(i)||g.matched.includes(i);return '<button class="memory-card '+(visible?'revealed':'')+'" data-do="memory:'+i+'" aria-label="Card '+(i+1)+(visible?', '+card:', hidden')+'" '+(g.matched.includes(i)?'disabled':'')+'>'+(visible?card:'?')+'</button>';}).join('')+'</div>'+btn('new-memory','New game','second','reset');}
+function playMemory(i){const g=memoryGame();if(i<0||i>=g.cards.length||g.matched.includes(i)||g.revealed.includes(i))return;if(g.revealed.length===2)g.revealed=[];g.revealed.push(i);if(g.revealed.length===2){g.moves++;if(g.cards[g.revealed[0]]===g.cards[i])g.matched.push(...g.revealed);}save();render();announce(g.matched.length===g.cards.length?'All pairs found.':'Pairs '+g.matched.length/2+' of 4.');}
 function restorePage(){
  let msg='Select the outcome for this local prototype.';
  if(restoreState==='progress')msg='Restoring your eligible Device 1 sessions…';
@@ -95,9 +146,9 @@ function restorePage(){
  if(['missing','expired','unsupported'].includes(restoreState))body+=btn('restore-manual','Provider sign-in','tonal');
  return body+'</main>';
 }
-function runRestore(){restoreState='progress';render();const ticket=++restoreTicket;timer=setTimeout(()=>{if(ticket!==restoreTicket)return;const eligible=Object.keys(cats).filter(c=>session(c,'D1'));restoreState=offline?'offline':outcome==='success'?(eligible.length?'success':'missing'):outcome;if(restoreState==='success'){eligible.forEach(c=>data.sessions[sessionKey(c)]=session(c,'D1'));save();}else if(['expired','unsupported'].includes(restoreState)){eligible.forEach(c=>delete data.sessions[sessionKey(c)]);save();}render();},850);}
+function runRestore(){restoreState='progress';render();const ticket=++restoreTicket;timer=setTimeout(()=>{if(ticket!==restoreTicket)return;const eligible=restorableKeys().filter(k=>session(k,'D1'));restoreState=offline?'offline':outcome==='success'?(eligible.length?'success':'missing'):outcome;if(restoreState==='success'){eligible.forEach(k=>data.sessions[sessionKey(k)]=session(k,'D1'));save();}else if(['expired','unsupported'].includes(restoreState)){eligible.forEach(k=>delete data.sessions[sessionKey(k)]);save();}render();},850);}
 function render(focus=false){
- if(!data.user&&!['signin','register','welcome'].includes(route.page)){route={page:'signin'};stack=[];}
+ if(!data.user&&!data.guest&&!['signin','register','welcome'].includes(route.page)){route={page:'welcome'};stack=[];}
  const last=document.activeElement?.closest('[data-do]')?.dataset.do;
  const body=route.page==='welcome'?welcome():['signin','register'].includes(route.page)?auth():route.page==='home'?home():route.page==='category'?category():route.page==='restore'?restorePage():provider();
  app.innerHTML=brandHeader()+body;
@@ -111,40 +162,49 @@ function panel(name){
  let title='',body='';
  if(name==='demo'){
   title='Demo controls';
-  body='<h3>Account for next demo sign-in</h3><div class="selector">'+['a','b'].map(k=>'<button class="btn '+(chosenDemo===k?'tonal active':'second')+'" data-do="choose:'+k+'" aria-pressed="'+(chosenDemo===k)+'">'+demos[k].name+' · '+k.toUpperCase()+'</button>').join('')+'</div><h3>Preview a screen state</h3><label class="field">Category<select id="demo-cat">'+Object.keys(cats).map(c=>'<option '+(c===(route.cat||'News')?'selected':'')+'>'+c+'</option>').join('')+'</select></label>'+menuRow('hold:loading','Service loading','video')+menuRow('hold:empty','Empty category','empty')+menuRow('hold:error','Page-load error','warn')+menuRow('offline',offline?'Go online':'Go offline','offline')+'<h3>Devices</h3><p class="hint">Current device: '+statusText()+'. Provider sessions belong to the signed-in AIOHub user.</p>'+menuRow('device2','Start fresh on Device 2','device')+(data.device==='D2'?menuRow('device1','Return to Device 1','device'):'')+(data.user?menuRow('seed-session','Prepare a sample Device 1 session','user'):'')+'<div class="rule"></div>'+menuRow('reset','Reset demo','reset');
- }else if(name==='account'){title='AIOHub account';body='<strong class="break">'+esc(who())+'</strong><p class="hint break">'+esc(data.user)+' · '+statusText()+'</p>'+(data.device==='D2'?menuRow('restore','Simulated restoration','device'):'')+menuRow('logout','Log out','signout');}
- else if(name==='provider'){title=cats[route.cat]+' demo sign-in';body='<p class="sub">Use a fictional provider identity for this AIOHub account.</p>'+btn('provider-confirm','Continue as '+esc(who())+' · '+cats[route.cat],'primary')+btn('close','Cancel','quiet');}
+  body='<h3>Account for next demo sign-in</h3><div class="selector">'+['a','b'].map(k=>'<button class="btn '+(chosenDemo===k?'tonal active':'second')+'" data-do="choose:'+k+'" aria-pressed="'+(chosenDemo===k)+'">'+demos[k].name+' · '+k.toUpperCase()+'</button>').join('')+'</div>'+menuRow('demo-login','Use selected demo account','user')+'<h3>Preview a screen state</h3><label class="field">Category<select id="demo-cat">'+Object.keys(cats).map(c=>'<option '+(c===(route.cat||'News')?'selected':'')+'>'+c+'</option>').join('')+'</select></label>'+menuRow('hold:loading','Service loading','video')+menuRow('hold:empty','Empty category','empty')+menuRow('hold:error','Page-load error','warn')+menuRow('offline',offline?'Go online':'Go offline','offline')+'<h3>Devices</h3><p class="hint">Current device: '+statusText()+'. Provider sessions belong to the signed-in AIOHub user.</p>'+menuRow('device2','Start fresh on Device 2','device')+(data.device==='D2'?menuRow('device1','Return to Device 1','device'):'')+(data.user?menuRow('seed-session','Prepare a sample Device 1 session','user'):'')+'<div class="rule"></div>'+menuRow('reset','Reset demo','reset');
+ }else if(name==='account'){
+  if(data.guest){title='Guest mode';body='<p class="hint">You can explore without an AIOHub account. Your game progress stays in this browser.</p>'+menuRow('signin','Sign in','user')+menuRow('register','Create account','user')+menuRow('leave-guest','Leave guest mode','signout');}
+  else {title='AIOHub account';body='<strong class="break">'+esc(who())+'</strong><p class="hint break">'+esc(data.user)+' · '+statusText()+'</p>'+(data.device==='D2'?menuRow('restore','Simulated restoration','device'):'')+menuRow('logout','Log out','signout');}
+ }
+ else if(name==='provider'){title=serviceName()+' demo sign-in';body='<p class="sub">Use a fictional provider identity for this '+(data.guest?'guest session.':'AIOHub account.')+'</p>'+btn('provider-confirm','Continue as '+esc(who())+' · '+serviceName(),'primary')+btn('close','Cancel','quiet');}
  sheet.innerHTML='<div class="sheet-head"><h2 id="sheet-title">'+title+'</h2><button data-do="close" class="icon-btn" aria-label="Close '+esc(title)+'">'+icon('x')+'</button></div><div class="sheet-body">'+body+'</div>';
  if(!sheet.open)sheet.showModal();
 }
 function closePanel(){if(sheet.open)sheet.close();currentPanel='';if(dialogFocusEl?.isConnected)dialogFocusEl.focus({preventScroll:true});}
-function ensureDemo(){if(!data.user){data.user=demos[chosenDemo].email;save();stack=[];}}
+function ensureDemo(){if(!data.user){data.user=demos[chosenDemo].email;data.guest=false;save();stack=[];}}
 function clearHeld(){held='';}
 function goCategory(c){clearHeld();navigate({page:'category',cat:c});}
 function handle(action){
- const [a,param]=action.split(':');
+ const [a,param,service]=action.split(':');
  if(a==='close'){closePanel();return;}
  if(a==='demo'||a==='account'){panel(a);return;}
  if(a==='choose'){chosenDemo=param;const select=sheet.querySelector('#demo-cat')?.value;panel('demo');if(select)sheet.querySelector('#demo-cat').value=select;sheet.querySelector('[data-do="choose:'+param+'"]').focus();return;}
  const selectedCat=sheet.querySelector('#demo-cat')?.value||route.cat||'News';
  if(sheet.open)closePanel();
- if(a==='welcome'||a==='signin'||a==='register'){notice='';navigate({page:a});}
+ if(a==='get-started'){startGuest();}
+ else if(a==='leave-guest'){data.guest=false;save();stack=[];navigate({page:'welcome'},true);}
+ else if(a==='welcome'||a==='signin'||a==='register'){notice='';if(a==='welcome'&&data.guest){data.guest=false;save();stack=[];}navigate({page:a});}
  else if(a==='demo-login'){startUser(demos[chosenDemo].email);}
  else if(a==='home'){clearHeld();navigate({page:'home'});}
  else if(a==='cat'){goCategory(param);}
- else if(a==='open'){openService(param);}
+ else if(a==='open'){openService(param,'',service);}
  else if(a==='services'){goCategory(route.cat);}
- else if(a==='retry'){openService(route.cat);}
+ else if(a==='retry'){openService(route.cat,'',route.service);}
  else if(a==='finish-load'){held='';route.phase=offline?'error':'ready';render(true);}
- else if(a==='web-back'){navigate({page:'provider',cat:'News',phase:'ready'},true);}
- else if(a==='article'){navigate({page:'provider',cat:'News',phase:'ready',article:Number(param)});}
+ else if(a==='web-back'){navigate({page:'provider',cat:'News',service:route.service,phase:'ready'},true);}
+ else if(a==='article'){navigate({page:'provider',cat:'News',service:route.service,phase:'ready',article:Number(param)});}
  else if(a==='pick'){stop();picked=Number(param);elapsed=0;togglePlayback();}
  else if(a==='toggle'){togglePlayback();}
  else if(a==='new-game'){data.games[sessionKey('board')]=newBoard();save();render();announce('New game. Score zero.');}
  else if(a==='move'){playMove(param);}
+ else if(a==='ttt'){playTtt(Number(param));}
+ else if(a==='new-ttt'){data.games[sessionKey('ttt')]={cells:Array(9).fill(''),turn:'X'};save();render();announce('New Tic Tac Toe game.');}
+ else if(a==='memory'){playMemory(Number(param));}
+ else if(a==='new-memory'){data.games[sessionKey('memory')]=newMemory();save();render();announce('New Memory Match game.');}
  else if(a==='provider-in'){panel('provider');}
- else if(a==='provider-confirm'){data.sessions[sessionKey(route.cat)]=who()+' · '+cats[route.cat];save();render();announce('Provider signed in.');}
- else if(a==='provider-out'){delete data.sessions[sessionKey(route.cat)];save();render();}
+ else if(a==='provider-confirm'){data.sessions[sessionKey(serviceKey())]=who()+' · '+serviceName();save();render();announce('Provider signed in.');}
+ else if(a==='provider-out'){delete data.sessions[sessionKey(serviceKey())];save();render();}
  else if(a==='logout'){logout();}
  else if(a==='hold'){
   ensureDemo();offline=false;
@@ -155,11 +215,11 @@ function handle(action){
  else if(a==='offline'){offline=!offline;if(offline){stop();if(route.page==='provider'){clearTimeout(timer);route.phase='error';}}render();announce(offline?'Offline mode enabled.':'Back online.');}
  else if(a==='device2'){startD2();}
  else if(a==='device1'){data.device='D1';offline=false;logout();notice='Back on Device 1.';render();}
- else if(a==='seed-session'){data.sessions[sessionKey(selectedCat,'D1')]=who()+' · '+cats[selectedCat];save();announce('Prepared '+cats[selectedCat]+' on Device 1.');panel('demo');sheet.querySelector('.sheet-body').insertAdjacentHTML('afterbegin','<p class="notice" role="status">Prepared '+cats[selectedCat]+' for '+esc(who())+' on Device 1.</p>');}
+ else if(a==='seed-session'){if(selectedCat!=='Game'){data.sessions[sessionKey(selectedCat,'D1')]=who()+' · '+cats[selectedCat];save();announce('Prepared '+cats[selectedCat]+' on Device 1.');}panel('demo');sheet.querySelector('.sheet-body').insertAdjacentHTML('afterbegin','<p class="notice" role="status">'+(selectedCat==='Game'?'Games do not use provider sessions.':'Prepared '+cats[selectedCat]+' for '+esc(who())+' on Device 1.')+'</p>');}
  else if(a==='restore'){restoreState='';navigate({page:'restore'});}
  else if(a==='restore-go'){runRestore();}
- else if(a==='restored-open'){const c=Object.keys(cats).find(cat=>session(cat,'D1')&&session(cat));if(c)openService(c);}
- else if(a==='restore-manual'){const c=Object.keys(cats).find(c=>session(c,'D1'))||'Music';if(offline){openService(c);return;}navigate({page:'provider',cat:c,phase:'ready'});panel('provider');}
+ else if(a==='restored-open'){const key=restorableKeys().find(k=>session(k,'D1')&&session(k));if(key){const target=routeForServiceKey(key);openService(target.cat,'',target.service);}}
+ else if(a==='restore-manual'){const key=restorableKeys().find(k=>session(k,'D1'))||'Music',target=routeForServiceKey(key);if(offline){openService(target.cat,'',target.service);return;}navigate({page:'provider',...target,phase:'ready'});panel('provider');}
  else if(a==='reset'){stop();clearTimeout(timer);data=fresh();save();stack=[];held='';offline=false;outcome='success';restoreState='';notice='';prefill='';chosenDemo='a';navigate({page:'welcome'},true);}
 }
 document.addEventListener('click',e=>{const control=e.target.closest('button[data-do]');if(control)handle(control.dataset.do);});
@@ -190,7 +250,7 @@ async function submitAuth(form){
  finally{submit.disabled=false;}
 }
 document.addEventListener('submit',e=>{e.preventDefault();if(e.target.id==='auth-form')submitAuth(e.target);if(e.target.id==='search-form'){search=new FormData(e.target).get('q').trim();render();app.querySelector('[name=q]')?.focus();}});
-document.addEventListener('keydown',e=>{if(sheet.open||route.page!=='provider'||route.cat!=='Game'||route.phase!=='ready'||offline||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();playMove(e.key.slice(5).toLowerCase());});
+document.addEventListener('keydown',e=>{if(sheet.open||route.page!=='provider'||route.cat!=='Game'||serviceName()!=='2048'||route.phase!=='ready'||offline||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key))return;e.preventDefault();playMove(e.key.slice(5).toLowerCase());});
 let swipe;
 document.addEventListener('pointerdown',e=>{const board=e.target.closest('#board');if(board){swipe=[e.clientX,e.clientY];board.setPointerCapture(e.pointerId);}});
 document.addEventListener('pointercancel',()=>{swipe=null;});
@@ -199,5 +259,5 @@ window.addEventListener('offline',()=>{offline=true;stop();if(route.page==='prov
 window.addEventListener('online',()=>{offline=false;render();});
 window.addEventListener('pagehide',stop);
 history.replaceState({aio:false},'');history.pushState({aio:true},'');
-window.addEventListener('popstate',()=>{history.pushState({aio:true},'');if(sheet.open)closePanel();else if(stack.length)back();else if(!data.user&&route.page!=='welcome')navigate({page:'welcome'},true);});
+window.addEventListener('popstate',()=>{history.pushState({aio:true},'');if(sheet.open)closePanel();else if(stack.length)back();else if(!data.user&&route.page!=='welcome'){if(data.guest){data.guest=false;save();}navigate({page:'welcome'},true);}});
 render();

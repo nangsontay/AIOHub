@@ -480,6 +480,17 @@ button,.tile {
   padding:12px;
 }
 
+.service-copy {
+  display:grid;
+  gap:2px;
+}
+
+.service-copy small {
+  color:var(--muted);
+  font-size:.82rem;
+  line-height:1.35;
+}
+
 .service-row .end,.item .end,.menu-row .end {
   margin-left:auto;
 }
@@ -696,6 +707,46 @@ button,.tile {
   font-size:1.55rem;
   color:#282136;
   background:#e5ddd1;
+}
+
+.mini-board,.memory-board {
+  display:grid;
+  gap:8px;
+  width:100%;
+}
+
+.mini-board {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+.memory-board {
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.mini-cell,.memory-card {
+  display:grid;
+  place-items:center;
+  aspect-ratio:1;
+  border-radius:14px;
+  background:var(--lav);
+  color:var(--indigo);
+  font-size:2rem;
+  font-weight:750;
+}
+
+.mini-cell:hover:not(:disabled),.memory-card:hover:not(:disabled) {
+  background:#ddd5fa;
+}
+
+.memory-card {
+  font-size:1.8rem;
+  background:var(--indigo);
+  color:white;
+}
+
+.memory-card.revealed {
+  background:var(--lav);
+  color:var(--ink);
 }
 
 .directions {
