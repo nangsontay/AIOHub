@@ -70,7 +70,14 @@ export function BackLink({
   onPress: () => void;
 }) {
   return (
-    <Button label={label} onPress={onPress} variant="quiet" icon="left" small />
+    <Button
+      label={label}
+      onPress={onPress}
+      variant="quiet"
+      icon="left"
+      small
+      style={styles.backLink}
+    />
   );
 }
 export function BrandHeader({
@@ -78,7 +85,9 @@ export function BrandHeader({
   onAccount,
   onDemo,
   offline = false,
+  guest = false,
 }: {
+  guest?: boolean;
   initial?: string;
   onAccount?: () => void;
   onDemo: () => void;
@@ -95,7 +104,7 @@ export function BrandHeader({
           {initial && (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Account menu"
+              accessibilityLabel={guest ? 'Guest menu' : 'Account menu'}
               onPress={onAccount}
               style={styles.round}
             >
@@ -162,27 +171,31 @@ export function MenuRow({
     </Pressable>
   );
 }
-export function Field({
-  label,
-  error,
-  ...props
-}: TextInputProps & { label: string; error?: string }) {
+export const Field = React.forwardRef<
+  React.ComponentRef<typeof TextInput>,
+  TextInputProps & { label: string; error?: string }
+>(function FieldInput({ label, error, ...props }, ref) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
+        ref={ref}
         {...props}
         style={[styles.input, !!error && styles.inputError, props.style]}
       />
       {!!error && (
-        <Text accessibilityRole="alert" style={styles.error}>
+        <Text
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={styles.error}
+        >
           {error}
         </Text>
       )}
     </View>
   );
-}
+});
 export function Notice({ children }: { children: React.ReactNode }) {
   return (
     <View accessibilityLiveRegion="polite" style={styles.notice}>
@@ -207,6 +220,7 @@ export function Screen({
   );
 }
 const styles = StyleSheet.create({
+  backLink: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   button: {
     minHeight: 50,
     borderRadius: 13,

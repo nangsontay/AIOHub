@@ -3,8 +3,10 @@ import { StyleSheet } from 'react-native';
 import BrowserView from '../browser/browser-view';
 import { serviceUrls } from '../state/catalog';
 
-export default function WebService({ cat }: { cat: 'News' | 'Game' }) {
-  return <BrowserView sourceUrl={serviceUrls[cat]} style={styles.browser} />;
+export default function WebService({ service }: { service: string }) {
+  return (
+    <BrowserView sourceUrl={serviceUrls[service]} style={styles.browser} />
+  );
 }
 
 const styles = StyleSheet.create({

@@ -1,6 +1,6 @@
 # Phase 3 — Verify, tests, docs
 
-**Status:** pending · **Depends on:** 2A, 2B
+**Status:** done · **Depends on:** 2A, 2B
 
 ## Files (owned)
 

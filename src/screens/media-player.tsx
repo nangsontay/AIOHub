@@ -1,26 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Icon } from '../components/icon';
 import { Button, Notice } from '../components/ui';
+import { colors, radii, spacing, typography } from '../theme/tokens';
 import {
-  colors,
-  radii,
-  spacing,
-  typography,
-} from '../theme/tokens';
-import { cats, formatTime, tracks, videos } from '../state/catalog';
+  formatTime,
+  tracks,
+  videos,
+  videoCollections,
+  musicCollections,
+} from '../state/catalog';
 import { useApp } from '../state/store';
 
-export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
+export default function MediaPlayer({
+  cat,
+  service,
+}: {
+  cat: 'Video' | 'Music';
+  service: string;
+}) {
   const app = useApp();
   const isVideo = cat === 'Video';
-  const items = isVideo ? videos : tracks;
+  const items = isVideo
+    ? videoCollections[service as keyof typeof videoCollections] || videos
+    : musicCollections[service as keyof typeof musicCollections] || tracks;
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [picked, setPicked] = useState(0);
@@ -34,7 +37,6 @@ export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
         .toLowerCase()
         .includes(search.toLowerCase()),
     );
-  const providerId = app.session(cat);
 
   useEffect(() => {
     if (app.offline) {
@@ -64,7 +66,9 @@ export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
 
   return (
     <>
-      <Text style={styles.h1}>{cats[cat]}</Text>
+      <Text accessibilityRole="header" style={styles.h1}>
+        {service}
+      </Text>
       {isVideo && (
         <View style={styles.search}>
           <TextInput
@@ -83,11 +87,7 @@ export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
       )}
       <View style={styles.player}>
         <View style={[styles.cover, { backgroundColor: item.color }]}>
-          <Icon
-            name={isVideo ? 'video' : 'music'}
-            size={50}
-            color="#ffffff"
-          />
+          <Icon name={isVideo ? 'video' : 'music'} size={50} color="#ffffff" />
         </View>
         <View style={styles.playerDetails}>
           <Text style={styles.meta}>Simulated playback</Text>
@@ -95,7 +95,10 @@ export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
           <Text style={styles.muted}>{item.by}</Text>
           <View style={styles.progress}>
             <View
-              style={[styles.fill, { width: (100 * elapsed) / item.time + '%' }]}
+              style={[
+                styles.fill,
+                { width: (100 * elapsed) / item.time + '%' },
+              ]}
             />
           </View>
           <View style={styles.titleRow}>
@@ -133,24 +136,6 @@ export default function MediaPlayer({ cat }: { cat: 'Video' | 'Music' }) {
         ) : (
           <Notice>No videos match this search.</Notice>
         )}
-      </View>
-      <View style={styles.session}>
-        {providerId ? (
-          <View>
-            <Text style={styles.muted}>Provider account</Text>
-            <Text style={styles.sessionId}>{providerId}</Text>
-          </View>
-        ) : (
-          <Text style={styles.muted}>Provider account · Guest</Text>
-        )}
-        <Button
-          label={providerId ? 'Sign out' : 'Provider sign-in'}
-          variant="quiet"
-          small
-          onPress={
-            providerId ? app.providerSignOut : () => app.openPanel('provider')
-          }
-        />
       </View>
     </>
   );
@@ -215,14 +200,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.ink,
   },
-  session: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.line,
-    paddingTop: spacing.sm,
-  },
-  sessionId: { color: colors.muted, fontWeight: '700' },
 });

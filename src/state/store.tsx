@@ -5,15 +5,20 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { BackHandler } from 'react-native';
+import { AccessibilityInfo, BackHandler } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Cat, cats, demos } from './catalog';
+import { Cat, cats, demos, servicesByCategory } from './catalog';
 import { digest } from './sha256';
 export type { Cat } from './catalog';
 export type Route =
   | { page: 'welcome' | 'signin' | 'register' | 'home' | 'restore' }
   | { page: 'category'; cat: Cat }
-  | { page: 'provider'; cat: Cat; phase: 'loading' | 'ready' | 'error' };
+  | {
+      page: 'provider';
+      cat: Cat;
+      service: string;
+      phase: 'loading' | 'ready' | 'error';
+    };
 export type PanelName = 'demo' | 'account' | 'provider' | null;
 export type RestoreState =
   | ''
@@ -35,6 +40,7 @@ type Data = {
   games: Record<string, unknown>;
   device: 'D1' | 'D2';
   user: string | null;
+  guest: boolean;
 };
 type Outcome = 'success' | 'expired' | 'unsupported';
 type Held = '' | 'loading' | 'empty' | 'error';
@@ -44,6 +50,7 @@ const fresh = (): Data => ({
   games: {},
   device: 'D1',
   user: null,
+  guest: false,
 });
 const key = 'aiohub-pocket-v1';
 function createStore(notify: () => void) {
@@ -78,29 +85,58 @@ function createStore(notify: () => void) {
   const cancel = () => {
     clearTimeout(timer);
     ticket++;
+    if (restoreState === 'progress') restoreState = '';
   };
-  const sessionKey = (cat: Cat, device = data.device) =>
+  const serviceKey = (cat: Cat, service = cats[cat]) =>
+    service === cats[cat] ? cat : cat + ':' + service;
+  const restorable = (Object.keys(cats) as Cat[])
+    .filter(c => c !== 'Game')
+    .flatMap(cat =>
+      servicesByCategory[cat].map(({ name }) => ({
+        cat,
+        service: name,
+        key: serviceKey(cat, name),
+      })),
+    );
+  const sessionKey = (cat: string, device = data.device) =>
     JSON.stringify([device, data.user, cat]);
-  const session = (cat: Cat, device?: 'D1' | 'D2') =>
+  const session = (cat: string, device?: 'D1' | 'D2') =>
     data.sessions[sessionKey(cat, device)];
   const who = () =>
     Object.values(demos).find(d => d.email === data.user)?.name ||
-    (data.user || 'Guest').split('@')[0];
-  const navigate = (next: Route, replace = false) => {
-    cancel();
+    (data.user || 'Guest').split('@')[0] ||
+    'Guest';
+  const guard = () => {
     if (
       !data.user &&
-      ['home', 'category', 'provider', 'restore'].includes(next.page)
-    )
-      next = { page: 'signin' };
+      !data.guest &&
+      !['welcome', 'signin', 'register'].includes(route.page)
+    ) {
+      route = { page: 'welcome' };
+      stack = [];
+    }
+  };
+  const navigate = (next: Route, replace = false) => {
+    cancel();
+    if (next.page === 'welcome' && data.guest) {
+      data.guest = false;
+      save();
+    }
     if (!replace) stack.push(route);
     route = next;
+    guard();
     update();
   };
   const back = () => {
-    if (!stack.length) return false;
     cancel();
-    route = stack.pop()!;
+    route = stack.pop() || {
+      page: data.user || data.guest ? 'home' : 'welcome',
+    };
+    if (route.page === 'welcome' && data.guest) {
+      data.guest = false;
+      save();
+    }
+    guard();
     if (
       route.page === 'provider' &&
       route.phase === 'loading' &&
@@ -113,6 +149,7 @@ function createStore(notify: () => void) {
   const startUser = (email: string) => {
     prefill = '';
     data.user = email;
+    data.guest = false;
     save();
     stack = [];
     notice = '';
@@ -120,6 +157,7 @@ function createStore(notify: () => void) {
   };
   const logout = () => {
     data.user = null;
+    data.guest = false;
     prefill = '';
     save();
     stack = [];
@@ -133,9 +171,13 @@ function createStore(notify: () => void) {
     held = '';
     navigate({ page: 'category', cat });
   };
-  const openService = (cat: Cat, sticky: '' | 'loading' | 'error' = '') => {
+  const openService = (
+    cat: Cat,
+    service = cats[cat],
+    sticky: '' | 'loading' | 'error' = '',
+  ) => {
     held = sticky;
-    navigate({ page: 'provider', cat, phase: 'loading' });
+    navigate({ page: 'provider', cat, service, phase: 'loading' });
     if (route.page !== 'provider' || sticky === 'loading') return;
     const current = ticket;
     timer = setTimeout(() => {
@@ -143,6 +185,7 @@ function createStore(notify: () => void) {
       route = {
         page: 'provider',
         cat,
+        service,
         phase: offline || sticky === 'error' ? 'error' : 'ready',
       };
       update();
@@ -156,7 +199,7 @@ function createStore(notify: () => void) {
     const email = emailInput.trim().toLowerCase(),
       errors: FieldErrors = {},
       registering = confirm !== undefined;
-    if (!/^\S+@\S+\.\S+$/.test(email))
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       errors.email = 'Enter a valid email address.';
     if (!pw) errors.password = 'Enter a password.';
     if (registering) {
@@ -219,14 +262,21 @@ function createStore(notify: () => void) {
           const parsed = JSON.parse(raw);
           if (
             parsed &&
-            typeof parsed.accounts === 'object' &&
-            typeof parsed.sessions === 'object' &&
+            parsed.accounts !== null &&
+            Object.getPrototypeOf(parsed.accounts) === Object.prototype &&
+            parsed.sessions !== null &&
+            Object.getPrototypeOf(parsed.sessions) === Object.prototype &&
+            (typeof parsed.user === 'string' || parsed.user === null) &&
             ['D1', 'D2'].includes(parsed.device)
           )
-            data = { ...fresh(), ...parsed };
+            data = {
+              ...fresh(),
+              ...parsed,
+              guest: parsed.user === null && parsed.guest === true,
+            };
         }
       } catch {}
-      route = { page: data.user ? 'home' : 'welcome' };
+      route = { page: data.user || data.guest ? 'home' : 'welcome' };
       ready = true;
       update();
     },
@@ -235,9 +285,29 @@ function createStore(notify: () => void) {
     },
     navigate,
     back,
+    startGuest() {
+      data.user = null;
+      data.guest = true;
+      save();
+      stack = [];
+      notice = '';
+      navigate({ page: 'home' }, true);
+    },
+    leaveGuest() {
+      data.guest = false;
+      save();
+      stack = [];
+      setPanel(null);
+      navigate({ page: 'welcome' }, true);
+    },
     openAuthPage(page: 'welcome' | 'signin' | 'register') {
       setPanel(null);
       notice = '';
+      if (page === 'welcome' && data.guest) {
+        data.guest = false;
+        save();
+        stack = [];
+      }
       navigate({ page });
     },
     openRestore() {
@@ -260,7 +330,7 @@ function createStore(notify: () => void) {
       }
     },
     retry() {
-      if (route.page === 'provider') openService(route.cat);
+      if (route.page === 'provider') openService(route.cat, route.service);
     },
     register(email: string, pw: string, confirm: string) {
       return auth(email, pw, confirm);
@@ -295,6 +365,7 @@ function createStore(notify: () => void) {
       setPanel(null);
       if (!data.user) {
         data.user = demos[chosenDemo].email;
+        data.guest = false;
         save();
         stack = [];
       }
@@ -304,8 +375,13 @@ function createStore(notify: () => void) {
         navigate({ page: 'category', cat: demoCat });
       } else if (v === 'error') {
         held = v;
-        navigate({ page: 'provider', cat: demoCat, phase: 'error' });
-      } else openService(demoCat, 'loading');
+        navigate({
+          page: 'provider',
+          cat: demoCat,
+          service: cats[demoCat],
+          phase: 'error',
+        });
+      } else openService(demoCat, cats[demoCat], 'loading');
     },
     toggleOffline() {
       setPanel(null);
@@ -315,11 +391,15 @@ function createStore(notify: () => void) {
         route = { ...route, phase: 'error' };
       }
       update();
+      AccessibilityInfo.announceForAccessibility(
+        offline ? 'Offline mode enabled.' : 'Back online.',
+      );
     },
     startDevice2() {
       setPanel(null);
       data.device = 'D2';
       data.user = null;
+      data.guest = false;
       prefill = '';
       for (const k of Object.keys(data.sessions)) {
         try {
@@ -342,30 +422,43 @@ function createStore(notify: () => void) {
       update();
     },
     seedSession() {
+      if (demoCat === 'Game') {
+        setPanel('demo');
+        sheetNotice = 'Games do not use provider sessions.';
+        update();
+        AccessibilityInfo.announceForAccessibility(sheetNotice);
+        return;
+      }
       data.sessions[sessionKey(demoCat, 'D1')] = who() + ' · ' + cats[demoCat];
       save();
       setPanel('demo');
       sheetNotice =
         'Prepared ' + cats[demoCat] + ' for ' + who() + ' on Device 1.';
       update();
+      AccessibilityInfo.announceForAccessibility(
+        'Prepared ' + cats[demoCat] + ' on Device 1.',
+      );
     },
     providerSignIn() {
-      if (route.page === 'provider') {
-        data.sessions[sessionKey(route.cat)] = who() + ' · ' + cats[route.cat];
+      if (route.page === 'provider' && route.cat !== 'Game') {
+        data.sessions[sessionKey(serviceKey(route.cat, route.service))] =
+          who() + ' · ' + route.service;
         save();
         setPanel(null);
         update();
+        AccessibilityInfo.announceForAccessibility('Provider signed in.');
       }
     },
     providerSignOut() {
       if (route.page === 'provider') {
-        delete data.sessions[sessionKey(route.cat)];
+        delete data.sessions[sessionKey(serviceKey(route.cat, route.service))];
         save();
         setPanel(null);
         update();
       }
     },
     session,
+    serviceKey,
     who,
     setOutcome(v: Outcome) {
       outcome = v;
@@ -379,9 +472,7 @@ function createStore(notify: () => void) {
       const current = ticket;
       timer = setTimeout(() => {
         if (ticket !== current) return;
-        const eligible = (Object.keys(cats) as Cat[]).filter(c =>
-          session(c, 'D1'),
-        );
+        const eligible = restorable.filter(({ key: k }) => session(k, 'D1'));
         restoreState = offline
           ? 'offline'
           : outcome === 'success'
@@ -390,29 +481,36 @@ function createStore(notify: () => void) {
             : 'missing'
           : outcome;
         if (restoreState === 'success')
-          eligible.forEach(c => {
-            data.sessions[sessionKey(c)] = session(c, 'D1');
+          eligible.forEach(({ key: k }) => {
+            data.sessions[sessionKey(k)] = session(k, 'D1');
           });
         else if (restoreState === 'expired' || restoreState === 'unsupported')
-          eligible.forEach(c => {
-            delete data.sessions[sessionKey(c)];
+          eligible.forEach(({ key: k }) => {
+            delete data.sessions[sessionKey(k)];
           });
         save();
         update();
       }, 850);
     },
     restoredOpen() {
-      const cat = (Object.keys(cats) as Cat[]).find(
-        c => session(c, 'D1') && session(c),
+      const found = restorable.find(
+        ({ key: k }) => session(k, 'D1') && session(k),
       );
-      if (cat) openService(cat);
+      if (found) openService(found.cat, found.service);
     },
     restoreManual() {
-      const cat =
-        (Object.keys(cats) as Cat[]).find(c => session(c, 'D1')) || 'Music';
-      if (offline) openService(cat);
+      const found = restorable.find(({ key: k }) => session(k, 'D1')) || {
+        cat: 'Music' as Cat,
+        service: cats.Music,
+      };
+      if (offline) openService(found.cat, found.service);
       else {
-        navigate({ page: 'provider', cat, phase: 'ready' });
+        navigate({
+          page: 'provider',
+          cat: found.cat,
+          service: found.service,
+          phase: 'ready',
+        });
         setPanel('provider');
         update();
       }
@@ -450,11 +548,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         store.closePanel();
         return true;
       }
-      if (store.back()) return true;
-      const { data, route } = store.state;
-      if (data.user || route.page === 'welcome') return false;
-      store.navigate({ page: 'welcome' }, true);
-      return true;
+      const { data, route, canGoBack } = store.state;
+      if (!canGoBack) {
+        if (data.user || (route.page === 'welcome' && !data.guest))
+          return false;
+        store.navigate({ page: 'welcome' }, true);
+        return true;
+      }
+      return store.back();
     });
     return () => {
       sub.remove();

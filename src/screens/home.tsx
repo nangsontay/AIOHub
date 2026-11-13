@@ -1,9 +1,9 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Button, Screen } from '../components/ui';
-import { Icon } from '../components/icon';
+import { Icon, type IconName } from '../components/icon';
 import { colors } from '../theme/tokens';
-import { cats, type Cat } from '../state/catalog';
+import { cats, descriptions, type Cat } from '../state/catalog';
 import { useApp } from '../state/store';
 
 const sleeve = require('../assets/pocket-mixtape.webp');
@@ -30,20 +30,24 @@ export default function HomeScreen() {
         <Text accessibilityRole="header" style={styles.h2}>
           Categories
         </Text>
-        <Text style={styles.sub}>Choose a service to open.</Text>
+        <Text style={styles.sub}>
+          {data.guest
+            ? 'Browsing as a guest. Choose a service to open.'
+            : 'Choose a service to open.'}
+        </Text>
       </View>
       <View style={styles.grid}>
         {(Object.keys(cats) as Cat[]).map(cat => (
           <Pressable
             key={cat}
             accessibilityRole="button"
-            accessibilityLabel={cat}
+            accessibilityLabel={cat + ', ' + descriptions[cat]}
             onPress={() => goCategory(cat)}
             style={[styles.tile, { backgroundColor: tileTheme[cat].tint }]}
           >
             <View style={styles.token}>
               <Icon
-                name={cat.toLowerCase() as never}
+                name={cat.toLowerCase() as IconName}
                 size={26}
                 color={tileTheme[cat].accent}
               />
@@ -53,12 +57,12 @@ export default function HomeScreen() {
             </View>
             <View style={styles.tileText}>
               <Text style={styles.tileTitle}>{cat}</Text>
-              <Text style={styles.tileSub}>{cats[cat]}</Text>
+              <Text style={styles.tileSub}>{descriptions[cat]}</Text>
             </View>
           </Pressable>
         ))}
       </View>
-      {data.device === 'D2' && (
+      {data.device === 'D2' && data.user && (
         <Button
           variant="tonal"
           label="Simulated restoration"

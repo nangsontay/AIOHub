@@ -15,6 +15,7 @@ function DemoPanel() {
     data,
     chosenDemo,
     chooseDemo,
+    demoLogin,
     demoCat,
     setDemoCat,
     offline,
@@ -54,6 +55,11 @@ function DemoPanel() {
           </Pressable>
         ))}
       </View>
+      <MenuRow
+        label="Use selected demo account"
+        icon="user"
+        onPress={demoLogin}
+      />
       <Text style={styles.h3}>Preview a screen state</Text>
       <Text style={styles.label}>Category</Text>
       <View style={styles.selector}>
@@ -131,7 +137,27 @@ function DemoPanel() {
 }
 
 function AccountPanel() {
-  const { data, who, openRestore, logout } = useApp();
+  const { data, who, openRestore, logout, openAuthPage, leaveGuest } = useApp();
+  if (data.guest)
+    return (
+      <>
+        <Text style={styles.hint}>
+          You can explore without an AIOHub account. Your game progress stays in
+          this browser.
+        </Text>
+        <MenuRow
+          label="Sign in"
+          icon="user"
+          onPress={() => openAuthPage('signin')}
+        />
+        <MenuRow
+          label="Create account"
+          icon="user"
+          onPress={() => openAuthPage('register')}
+        />
+        <MenuRow label="Leave guest mode" icon="signout" onPress={leaveGuest} />
+      </>
+    );
   return (
     <>
       <Text style={styles.who}>{who()}</Text>
@@ -151,16 +177,17 @@ function AccountPanel() {
 }
 
 function ProviderPanel() {
-  const { route, who, providerSignIn, closePanel } = useApp();
-  const cat = route.page === 'provider' ? route.cat : 'News';
+  const { route, data, who, providerSignIn, closePanel } = useApp();
+  const service = route.page === 'provider' ? route.service : cats.News;
   return (
     <>
       <Text style={styles.sub}>
-        Use a fictional provider identity for this AIOHub account.
+        Use a fictional provider identity for this{' '}
+        {data.guest ? 'guest session' : 'AIOHub account'}.
       </Text>
       <Button
         variant="primary"
-        label={'Continue as ' + who() + ' · ' + cats[cat]}
+        label={'Continue as ' + who() + ' · ' + service}
         onPress={providerSignIn}
       />
       <Button variant="quiet" label="Cancel" onPress={closePanel} />
@@ -169,8 +196,8 @@ function ProviderPanel() {
 }
 
 export default function Panels() {
-  const { panel, closePanel, route } = useApp();
-  const providerCat = route.page === 'provider' ? route.cat : 'News';
+  const { panel, closePanel, route, data } = useApp();
+  const providerService = route.page === 'provider' ? route.service : cats.News;
   if (panel === 'demo') {
     return (
       <Sheet visible title="Demo controls" onClose={closePanel}>
@@ -180,7 +207,11 @@ export default function Panels() {
   }
   if (panel === 'account') {
     return (
-      <Sheet visible title="AIOHub account" onClose={closePanel}>
+      <Sheet
+        visible
+        title={data.guest ? 'Guest mode' : 'AIOHub account'}
+        onClose={closePanel}
+      >
         <AccountPanel />
       </Sheet>
     );
@@ -189,7 +220,7 @@ export default function Panels() {
     return (
       <Sheet
         visible
-        title={cats[providerCat] + ' demo sign-in'}
+        title={providerService + ' demo sign-in'}
         onClose={closePanel}
       >
         <ProviderPanel />

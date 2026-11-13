@@ -2,10 +2,10 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BackLink, Button, Screen, StateCard } from '../components/ui';
 import { colors } from '../theme/tokens';
-import { cats } from '../state/catalog';
 import { useApp } from '../state/store';
 import MediaPlayer from './media-player';
 import WebService from './web-service';
+import ProviderSession from './provider-session';
 
 function ProviderFrame({
   service,
@@ -30,8 +30,7 @@ function ProviderFrame({
 export default function ProviderScreen() {
   const app = useApp();
   if (app.route.page !== 'provider') return null;
-  const { cat, phase } = app.route;
-  const service = cats[cat];
+  const { cat, service, phase } = app.route;
   const goServices = () => app.goCategory(cat);
 
   if (phase === 'loading')
@@ -57,7 +56,7 @@ export default function ProviderScreen() {
       </ProviderFrame>
     );
 
-  if (phase === 'error')
+  if (phase === 'error' || app.offline)
     return (
       <ProviderFrame service={service} onServices={goServices}>
         <Screen>
@@ -82,14 +81,20 @@ export default function ProviderScreen() {
   if (cat === 'News' || cat === 'Game')
     return (
       <ProviderFrame service={service} onServices={goServices}>
-        <WebService cat={cat} />
+        <WebService service={service} />
+        {cat !== 'Game' && (
+          <View style={styles.webSession}>
+            <ProviderSession cat={cat} />
+          </View>
+        )}
       </ProviderFrame>
     );
 
   return (
     <ProviderFrame service={service} onServices={goServices}>
       <Screen>
-        <MediaPlayer key={cat} cat={cat} />
+        <MediaPlayer key={cat + ':' + service} cat={cat} service={service} />
+        <ProviderSession cat={cat} />
       </Screen>
     </ProviderFrame>
   );
@@ -97,6 +102,7 @@ export default function ProviderScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  webSession: { paddingHorizontal: 24, paddingBottom: 12 },
   servicebar: {
     flexDirection: 'row',
     alignItems: 'center',

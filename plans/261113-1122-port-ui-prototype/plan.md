@@ -1,7 +1,7 @@
 ---
 title: "Port ui-prototype into the React Native app"
 description: "Rebuild the HTML/CSS/JS prototype's screens in React Native; News and Game open real sites in GeckoView, Video and Music keep the simulated players."
-status: in-progress
+status: done
 priority: P1
 effort: 1h
 tags: [frontend, mobile, react-native]
@@ -41,7 +41,7 @@ Real provider auth, session export/import, NetInfo, iOS WebKit browser, GeckoVie
 | 1 | [Foundation: deps, theme, icons, primitives, store](phase-01-foundation.md) | — | `package.json`, `src/theme/**`, `src/components/**`, `src/state/**`, `src/assets/**` | done |
 | 2A | [Shell screens + router](phase-02a-shell-screens.md) | 1 | `App.tsx`, `src/screens/{welcome,auth,home,category,restore,panels}.tsx` | done |
 | 2B | [Provider screens](phase-02b-provider-screens.md) | 1 | `src/screens/{provider,media-player,web-service}.tsx` | done |
-| 3 | [Verify, tests, docs](phase-03-verify.md) | 2A, 2B | `__tests__/**`, `jest.config.js`, `README.md` | in-progress |
+| 3 | [Verify, tests, docs](phase-03-verify.md) | 2A, 2B | `__tests__/**`, `jest.config.js`, `README.md` | done |
 
 2A and 2B run in parallel with disjoint file ownership.
 

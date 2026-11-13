@@ -7,7 +7,7 @@ import { useApp } from '../state/store';
 const sleeve = require('../assets/pocket-mixtape.webp');
 
 export default function WelcomeScreen() {
-  const { openAuthPage, demoLogin } = useApp();
+  const { openAuthPage, startGuest } = useApp();
   return (
     <Screen style={styles.stage}>
       <View style={styles.sleeve}>
@@ -32,20 +32,19 @@ export default function WelcomeScreen() {
       <View style={styles.actions}>
         <Button
           variant="primary"
-          label="Sign in"
+          label="Get started"
           iconEnd="forward"
+          onPress={startGuest}
+        />
+        <Button
+          variant="second"
+          label="Sign in"
           onPress={() => openAuthPage('signin')}
         />
         <Button
           variant="second"
           label="Create account"
           onPress={() => openAuthPage('register')}
-        />
-        <Button
-          variant="quiet"
-          label="Use demo account"
-          icon="user"
-          onPress={demoLogin}
         />
       </View>
     </Screen>
@@ -54,8 +53,14 @@ export default function WelcomeScreen() {
 
 const styles = StyleSheet.create({
   stage: { flex: 1, gap: 0, paddingTop: 8 },
-  sleeve: { borderRadius: 19, overflow: 'hidden', backgroundColor: '#aba2fb' },
-  sleeveImg: { width: '100%', aspectRatio: 1.15 },
+  sleeve: {
+    width: '100%',
+    aspectRatio: 1.15,
+    borderRadius: 19,
+    overflow: 'hidden',
+    backgroundColor: '#aba2fb',
+  },
+  sleeveImg: { width: '100%', height: '100%' },
   copy: { paddingTop: 22, gap: 12 },
   h1: { fontSize: 46, lineHeight: 47, fontWeight: '700', color: colors.ink },
   h1Em: { color: colors.indigo },
